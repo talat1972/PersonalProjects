@@ -1,0 +1,81 @@
+import pandas as pd
+
+def is_regular_and_consistent(player):
+    # Get the cricket dates for the player
+    cricket_dates = player['Cricket_Dates']
+    
+    # Check if the player attended all cricket dates and has consistent attendance
+    if len(cricket_dates) == 10 and all(cricket_dates):
+        return True
+    else:
+        return False
+
+def player_ontime(player):
+    # Get the cricket dates for the player
+    cricket_dates = player['Cricket_Dates']
+    
+    # Check if the player is coming on time or late
+    for date in cricket_dates:
+        if date.time() > pd.Timestamp('19:00:00').time():
+            return False
+    return True
+
+def responsive_players(player):
+    # Check if the player has responded for all cricket dates
+    cricket_dates = player['Cricket_Dates']
+    
+    if all(pd.notnull(cricket_dates)):
+        return True
+    else:
+        return False
+
+def get_player_information(file_path):
+    # Read the Excel file into a pandas DataFrame
+    df = pd.read_excel(file_path)
+
+    # Initialize empty lists to store regular, inconsistent, and non-responsive players
+    regular_players = []
+    inconsistent_players = []
+    nonresponsive_players = []
+
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        player_info = {
+            'Last_Name': row['Last_Name'],
+            'First_Name': row['First_Name'],
+            'Paid_Member': row['Paid_Member'],
+            'Cricket_Dates': [row[col] for col in df.columns if col.startswith('Cricket_Date')]
+        }
+
+        # Check if the player is regular attending and consistent
+        if is_regular_and_consistent(player_info):
+            regular_players.append(player_info)
+        else:
+            inconsistent_players.append(player_info)
+
+        # Check if the player is not responsive
+        if not responsive_players(player_info):
+            nonresponsive_players.append(player_info)
+
+    return regular_players, inconsistent_players, nonresponsive_players
+
+# Provide the file path of the Excel file
+file_path = 'path/to/players.xlsx'
+
+# Call the function to get the player information
+regular_players, inconsistent_players, nonresponsive_players = get_player_information(file_path)
+
+# Print the regular players
+print("Regular players:")
+for player in regular_players:
+    print(player)
+
+# Print the inconsistent players
+print("Inconsistent players:")
+for player in inconsistent_players:
+    print(player)
+
+# Print the non-responsive players
+print("Non-responsive players:")
+for player in nonresponsive_players:
+    print(player)
