@@ -1,44 +1,63 @@
 import pandas as pd
+import os
 
-def is_regular_and_consistent(player):
-    # Get the cricket dates for the player
-    cricket_dates = player['Cricket_Dates']
-    
-    # Check if the player attended all cricket dates and has consistent attendance
-    if len(cricket_dates) == 10 and all(cricket_dates):
-        return True
-    else:
-        return False
+CRICKET_TIME_LIMIT = pd.Timestamp('19:00:00').time()
 
-def player_ontime(player):
-    # Get the cricket dates for the player
-    cricket_dates = player['Cricket_Dates']
-    
-    # Check if the player is coming on time or late
-    for date in cricket_dates:
-        if date.time() > pd.Timestamp('19:00:00').time():
-            return False
-    return True
+def is_regular_attendee(cricket_dates):
+    """
+    Check if a player is a regular attendee by attending all cricket dates.
 
-def responsive_players(player):
-    # Check if the player has responded for all cricket dates
-    cricket_dates = player['Cricket_Dates']
-    
-    if all(pd.notnull(cricket_dates)):
-        return True
-    else:
-        return False
+    Parameters:
+    - cricket_dates (list): List of datetime objects representing cricket attendance dates.
+
+    Returns:
+    - bool: True if the player is a regular attendee, False otherwise.
+    """
+    return len(cricket_dates) == 10 and all(cricket_dates)
+
+def player_ontime(cricket_dates):
+    """
+    Check if a player consistently arrives on time for cricket sessions.
+
+    Parameters:
+    - cricket_dates (list): List of datetime objects representing cricket attendance dates.
+
+    Returns:
+    - bool: True if the player consistently arrives on time, False otherwise.
+    """
+    return all(date.time() <= CRICKET_TIME_LIMIT for date in cricket_dates)
+
+def responsive_players(cricket_dates):
+    """
+    Check if a player has responded for all cricket dates.
+
+    Parameters:
+    - cricket_dates (list): List of datetime objects representing cricket attendance dates.
+
+    Returns:
+    - bool: True if the player has responded for all dates, False otherwise.
+    """
+    return all(pd.notnull(date) for date in cricket_dates)
 
 def get_player_information(file_path):
-    # Read the Excel file into a pandas DataFrame
+    """
+    Read player information from an Excel file and categorize players based on attendance and responsiveness.
+
+    Parameters:
+    - file_path (str): Path to the Excel file containing player information.
+
+    Returns:
+    - tuple: Three lists containing regular players, inconsistent players, and non-responsive players.
+    """
+    if not os.path.isfile(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+
     df = pd.read_excel(file_path)
 
-    # Initialize empty lists to store regular, inconsistent, and non-responsive players
     regular_players = []
     inconsistent_players = []
     nonresponsive_players = []
 
-    # Iterate over each row in the DataFrame
     for index, row in df.iterrows():
         player_info = {
             'Last_Name': row['Last_Name'],
@@ -47,14 +66,12 @@ def get_player_information(file_path):
             'Cricket_Dates': [row[col] for col in df.columns if col.startswith('Cricket_Date')]
         }
 
-        # Check if the player is regular attending and consistent
-        if is_regular_and_consistent(player_info):
+        if is_regular_attendee(player_info['Cricket_Dates']):
             regular_players.append(player_info)
         else:
             inconsistent_players.append(player_info)
 
-        # Check if the player is not responsive
-        if not responsive_players(player_info):
+        if not responsive_players(player_info['Cricket_Dates']):
             nonresponsive_players.append(player_info)
 
     return regular_players, inconsistent_players, nonresponsive_players
